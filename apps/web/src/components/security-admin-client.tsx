@@ -8,8 +8,6 @@ type SecurityConfig = {
   singleSession?: boolean;
   publicSignup?: boolean;
   sessionTtlHours?: number;
-  adminMfaRequired?: boolean;
-  mfaPolicy?: string;
 };
 
 export function SecurityAdminClient({ initial }: { initial: SecurityConfig }) {
@@ -18,7 +16,6 @@ export function SecurityAdminClient({ initial }: { initial: SecurityConfig }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const mfaPolicy = String(data.get("mfaPolicy") ?? "optional");
     try {
       await clientApi("/api/v1/admin/system/settings/security", {
         method: "PUT",
@@ -27,8 +24,6 @@ export function SecurityAdminClient({ initial }: { initial: SecurityConfig }) {
           singleSession: data.get("singleSession") === "on",
           publicSignup: data.get("publicSignup") === "on",
           sessionTtlHours: Number(data.get("sessionTtlHours")),
-          mfaPolicy,
-          adminMfaRequired: mfaPolicy === "all" || mfaPolicy === "owner-only" || mfaPolicy === "selected-roles",
         } }),
       });
       setMessage("Política de segurança salva.");
@@ -62,18 +57,6 @@ export function SecurityAdminClient({ initial }: { initial: SecurityConfig }) {
       <label className="checkbox-field">
         <input name="publicSignup" type="checkbox" defaultChecked={initial.publicSignup ?? false} />
         Permitir cadastro público
-      </label>
-
-      {/* MFA */}
-      <h3 className="section-title">Autenticação multifator (MFA / TOTP)</h3>
-      <label className="field">
-        <span>Política de MFA</span>
-        <select name="mfaPolicy" defaultValue={initial.mfaPolicy ?? "optional"}>
-          <option value="disabled">Desativado (ninguém pode configurar)</option>
-          <option value="optional">Opcional por usuário (padrão)</option>
-          <option value="owner-only">Obrigatório para Owner e Super Admin</option>
-          <option value="all">Obrigatório para todos</option>
-        </select>
       </label>
 
       <button className="button button-primary">Salvar política</button>

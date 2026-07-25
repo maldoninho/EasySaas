@@ -5,7 +5,7 @@ Base empresarial **single-tenant**: cada instalação atende uma empresa, com ba
 ## Componentes incluídos
 
 - Landing pública configurável e versionada.
-- Autenticação por convite, recuperação de senha, sessões opacas e MFA TOTP.
+- Autenticação por convite, recuperação de senha e sessões opacas.
 - App e Admin usando o mesmo `ApplicationShell`.
 - Usuários, papéis, permissões e proteção do último proprietário.
 - Categorias reordenáveis e módulos transferíveis entre categorias.
@@ -21,15 +21,25 @@ Base empresarial **single-tenant**: cada instalação atende uma empresa, com ba
 - React 19.2.6
 - Fastify 5.8.5
 - PostgreSQL 18
-- pnpm 11.4.0
+- pnpm 11.15.1
 
 ## Início rápido
 
 1. Leia [`README-INSTALL.md`](README-INSTALL.md).
-2. Prepare um PostgreSQL.
+2. Prepare um PostgreSQL ou suba o banco local com `docker compose -f docker-compose.optional.yml up -d`.
 3. Execute `start.cmd` no Windows ou `./start.sh` no Linux/macOS.
-4. Use o `SETUP_TOKEN` de `.env.local` somente no primeiro acesso local em `/setup`.
-5. Configure MFA na conta antes de acessar as ações administrativas.
+4. Após o seed, abra `http://localhost:3000/primeiro-acesso` para ver o superusuário padrão local e entrar.
+
+### Login padrão local
+
+```text
+Primeiro acesso: http://localhost:3000/primeiro-acesso
+Login:  superadmin
+E-mail: superadmin@local.easysaas
+Senha:  TrocarSenha!2026
+```
+
+Esses valores podem ser alterados antes do primeiro seed em `.env.local` pelas variáveis `EASYSAAS_SUPERADMIN_EMAIL`, `EASYSAAS_SUPERADMIN_NAME` e `EASYSAAS_SUPERADMIN_PASSWORD`.
 
 ## Estrutura
 

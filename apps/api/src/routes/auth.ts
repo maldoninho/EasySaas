@@ -1,31 +1,16 @@
 import type { FastifyInstance } from "fastify";
-import * as OTPAuth from "otpauth";
 import { env } from "@easysaas/config";
 import { writeAudit } from "@easysaas/core";
 import { query, transaction } from "@easysaas/database";
-import { decryptSecret, hashIp, hashPassword, randomToken, tokenHash, validatePassword, verifyPassword } from "@easysaas/security";
+import { hashIp, hashPassword, randomToken, tokenHash, validatePassword, verifyPassword } from "@easysaas/security";
 import { assert, email, jsonBody, ok, optionalText, text } from "../lib/http.js";
 import { enqueueJob } from "../services/jobs.js";
 import { clearSessionCookies, createSession, loadCurrentUser, requireAuth, requireCsrf } from "../services/session.js";
 import { getSecurityPolicy, verifyCaptcha } from "../services/security-policy.js";
 
-async function verifyMfa(userId:string,code:string|undefined):Promise<void>{
-  const result=await query<{secret_encrypted:string}>("SELECT secret_encrypted FROM mfa_credentials WHERE user_id=$1 AND type='totp' AND verified_at IS NOT NULL ORDER BY created_at DESC LIMIT 1",[userId]);
-  const credential=result.rows[0]; if(!credential) return;
-  assert(code,401,"MFA_REQUIRED","Código de autenticação ou recuperação obrigatório.");
-  const normalized=code.trim();
-  if (/^\d{6}$/.test(normalized)) {
-    const secret=decryptSecret(credential.secret_encrypted,env.encryptionKey);
-    const totp=new OTPAuth.TOTP({issuer:env.appName,label:"login",algorithm:"SHA1",digits:6,period:30,secret:OTPAuth.Secret.fromBase32(secret)});
-    if(totp.validate({token:normalized,window:1})!==null) return;
-  }
-  const recovery=await query<{id:string}>("SELECT id FROM recovery_codes WHERE user_id=$1 AND code_hash=$2 AND used_at IS NULL LIMIT 1",[userId,tokenHash(normalized)]);
-  assert(recovery.rows[0],401,"MFA_INVALID","Código de autenticação inválido.");
-  await query("UPDATE recovery_codes SET used_at=now() WHERE id=$1 AND used_at IS NULL",[recovery.rows[0].id]);
-}
 export async function authRoutes(app:FastifyInstance):Promise<void>{
   app.post("/api/v1/auth/login",{config:{rateLimit:{max:10,timeWindow:"15 minutes"}}},async(request,reply)=>{
-    const body=jsonBody(request); const userEmail=email(body.email); const password=text(body.password,"Senha",1,128); const mfaCode=optionalText(body.mfaCode,30); const captchaToken=optionalText(body.captchaToken,3000);
+    const body=jsonBody(request); const userEmail=email(body.email); const password=text(body.password,"Senha",1,128); const captchaToken=optionalText(body.captchaToken,3000);
     const result=await query<{id:string;email:string;name:string;status:string;password_hash:string|null;failed_login_count:number;locked_until:Date|null}>("SELECT id,email::text,name,status,password_hash,failed_login_count,locked_until FROM users WHERE email=$1",[userEmail]);
     const user=result.rows[0]; const policy=await getSecurityPolicy(); const captchaRequired=policy.captchaMode==="always"||(policy.captchaMode==="adaptive"&&(user?.failed_login_count??0)>=3); if(captchaRequired) await verifyCaptcha(captchaToken,request.ip); const generic=():never=>{throw Object.assign(new Error("E-mail ou senha inválidos."),{statusCode:401,code:"INVALID_CREDENTIALS"});};
     if(!user) return generic();
@@ -34,7 +19,7 @@ export async function authRoutes(app:FastifyInstance):Promise<void>{
       await query("UPDATE users SET failed_login_count=failed_login_count+1,locked_until=CASE WHEN failed_login_count+1>=10 THEN now()+interval '15 minutes' ELSE locked_until END WHERE id=$1",[user.id]);
       await query("INSERT INTO security_events(user_id,type,severity,metadata) VALUES ($1,'login.failed','warning',$2::jsonb)",[user.id,JSON.stringify({ipHash:hashIp(request.ip,env.sessionSecret)})]); generic();
     }
-    await verifyMfa(user.id,mfaCode); await query("UPDATE users SET failed_login_count=0,locked_until=NULL,last_login_at=now() WHERE id=$1",[user.id]);
+    await query("UPDATE users SET failed_login_count=0,locked_until=NULL,last_login_at=now() WHERE id=$1",[user.id]);
     await createSession({userId:user.id,request,reply}); await writeAudit({actorUserId:user.id,action:"auth.login",targetType:"session",requestId:request.id,ipHash:hashIp(request.ip,env.sessionSecret)});
     return ok(reply,{user:{id:user.id,email:user.email,name:user.name},redirectTo:"/app"});
   });

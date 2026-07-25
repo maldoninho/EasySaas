@@ -15,7 +15,7 @@ A base contém Landing pública, autenticação, App, Admin, conta, usuários e 
 - Consistência do schema `module.json` e dos contratos do SDK de módulos.
 - Testes unitários locais dos utilitários de bootstrap.
 - Proteção do último proprietário e reautenticação para concessão de Proprietário/Super Admin.
-- Fluxos de CAPTCHA configurável, cadastro público opcional e MFA administrativo.
+- Fluxos de CAPTCHA configurável, cadastro público opcional e controle administrativo por RBAC.
 - Integridade do pacote e manifesto SHA-256.
 
 ## Resultado local

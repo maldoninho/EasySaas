@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { env } from "@easysaas/config";
 import { writeAudit } from "@easysaas/core";
@@ -120,7 +119,7 @@ export async function activationRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // --- POST /api/v1/setup/complete-activation ---
-  // Step 2: set new password, update profile, activate account (no MFA required)
+  // Step 2: set new password, update profile, activate account
   app.post("/api/v1/setup/complete-activation", {
     config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
   }, async (request, reply) => {
@@ -164,15 +163,15 @@ export async function activationRoutes(app: FastifyInstance): Promise<void> {
       const vtRow = vtResult.rows[0]!;
       const newHash = await hashPassword(newPassword);
 
-      // Activate user — no MFA required by default
+      // Activate user
       await client.query(
         `UPDATE users SET
           email = $1, name = $2,
           password_hash = $3, temporary_password_hash = NULL,
           activation_token_hash = NULL, activation_token_expires_at = NULL,
           status = 'active', email_verified_at = now(),
-          must_change_password = false, must_verify_email = false, must_enable_mfa = false,
-          activated_at = now(), mfa_enabled_at = NULL,
+          must_change_password = false, must_verify_email = false,
+          activated_at = now(),
           password_changed_at = now(),
           accepted_terms_at = now(), accepted_privacy_at = now(),
           failed_login_count = 0, locked_until = NULL,
@@ -213,83 +212,5 @@ export async function activationRoutes(app: FastifyInstance): Promise<void> {
       activated: true,
       redirectTo: "/admin",
     }, 201);
-  });
-
-  // --- POST /api/v1/setup/recover-admin ---
-  // Emergency recovery: regenerates admin credentials (loopback only)
-  app.post("/api/v1/setup/recover-admin", {
-    config: { rateLimit: { max: 3, timeWindow: "15 minutes" } },
-  }, async (request, reply) => {
-    assert(
-      isLoopback(originalClientIp(request)),
-      403, "LOCAL_ONLY",
-      "A recuperação de administrador só pode ser feita localmente no servidor."
-    );
-
-    const userResult = await query<{ id: string; email: string; name: string; status: string }>(
-      "SELECT u.id, u.email::text, u.name, u.status FROM user_roles ur JOIN users u ON u.id = ur.user_id JOIN roles r ON r.id = ur.role_id WHERE r.is_owner = true ORDER BY u.created_at ASC LIMIT 1"
-    );
-
-    assert(userResult.rows.length > 0, 404, "NO_OWNER_FOUND",
-      "Nenhum proprietário encontrado. Execute o bootstrap primeiro.");
-
-    const user = userResult.rows[0]!;
-    const tempPassword = randomToken(24);
-    const activationToken = randomBytes(32).toString("base64url");
-    const tempPasswordHash = await hashPassword(tempPassword);
-    const activationTokenHash = tokenHash(activationToken);
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-    await transaction(async (client) => {
-      // Revoke all existing sessions
-      await client.query(
-        "UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL",
-        [user.id]
-      );
-
-      // Reset to pending_activation (preserves profile, only resets security)
-      await client.query(
-        `UPDATE users SET
-          status = 'pending_activation',
-          password_hash = $1, temporary_password_hash = $1,
-          activation_token_hash = $2, activation_token_expires_at = $3,
-          must_change_password = true, must_verify_email = true, must_enable_mfa = false,
-          activated_at = NULL, mfa_enabled_at = NULL, email_verified_at = NULL,
-          password_changed_at = NULL,
-          accepted_terms_at = NULL, accepted_privacy_at = NULL,
-          updated_at = now()
-        WHERE id = $4`,
-        [tempPasswordHash, activationTokenHash, expiresAt, user.id]
-      );
-
-      // Remove stale (unverified) MFA credentials
-      await client.query(
-        "DELETE FROM mfa_credentials WHERE user_id = $1 AND verified_at IS NULL",
-        [user.id]
-      );
-    });
-
-    await writeAudit({
-      actorUserId: user.id,
-      action: "admin.recovery.executed",
-      targetType: "user",
-      targetId: user.id,
-      requestId: request.id,
-      ipHash: hashIp("127.0.0.1", env.sessionSecret),
-    });
-
-    return ok(reply, {
-      recovered: true,
-      message: "Credenciais de administrador regeneradas com sucesso.",
-      credentials: {
-        username: user.email?.split("@")[0] ?? "superadmin",
-        email: user.email,
-        name: user.name,
-        temporaryPassword: tempPassword,
-        activationToken: activationToken,
-        activationUrl: `${env.appUrl}/primeiro-acesso`,
-        expiresAt: expiresAt.toISOString(),
-      },
-    });
   });
 }

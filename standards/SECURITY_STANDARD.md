@@ -16,7 +16,6 @@
 - Sessões opacas no servidor.
 - Cookies `HttpOnly`, `Secure`, `SameSite` e prefixo `__Host-` em produção.
 - Uma sessão ativa por usuário como padrão configurável.
-- MFA obrigatório para administradores.
 - Tokens de verificação e recuperação de uso único, expiráveis e armazenados por hash.
 
 ## Aplicação
@@ -35,6 +34,5 @@ Todo upload entra em quarentena, passa por inspeção estática, build e testes 
 ## Administração
 
 - Reautenticação para ações críticas.
-- MFA obrigatório.
 - Proteção do último proprietário.
 - Confirmação reforçada para exclusões e mudanças de segurança.

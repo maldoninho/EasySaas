@@ -30,9 +30,6 @@ if (existsSync(envPath)) {
 const values = { ...example, ...current };
 values.EASYSAAS_ROOT = rootPath();
 values.INSTALLATION_ID ||= randomUUID();
-if (!values.SETUP_TOKEN || values.SETUP_TOKEN.startsWith("replace-")) {
-  values.SETUP_TOKEN = randomBytes(32).toString("base64url");
-}
 if (!values.SESSION_SECRET || values.SESSION_SECRET.startsWith("replace-")) {
   values.SESSION_SECRET = randomBytes(48).toString("base64url");
 }
@@ -44,5 +41,6 @@ await writeEnvFile(envPath, values);
 console.log("Reparo concluído:");
 console.log("- diretórios de runtime verificados");
 console.log("- .env.local criado ou normalizado");
-console.log("- segredos e token de primeiro acesso gerados com criptografia segura");
+console.log("- segredos locais gerados com criptografia segura");
+console.log("- superadmin padrão local mantido em EASYSAAS_SUPERADMIN_*");
 console.log("Nenhum software de sistema foi instalado ou alterado.");

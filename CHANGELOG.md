@@ -25,7 +25,7 @@
 
 - Base single-tenant completa.
 - Landing configurável.
-- Autenticação, sessões, MFA e RBAC.
+- Autenticação, sessões e RBAC.
 - App/Admin compartilhando o mesmo shell.
 - Categorias e engine de módulos versionados.
 - Worker, providers, auditoria, backups e scripts multiplataforma.
@@ -44,4 +44,3 @@
 - Corrigido pnpm fixado e allowBuilds para sharp.
 - Corrigidos tipos de unzipper e importação do Ajv no validador.
 - Corrigido start.sh para reutilizar Node 24 via NVM.
-

@@ -64,8 +64,19 @@ export async function runDoctor({ phase = "default" } = {}) {
     const encryptionOk = Boolean(env.ENCRYPTION_KEY && !env.ENCRYPTION_KEY.startsWith("replace-") && env.ENCRYPTION_KEY.length >= 40);
     results.push(result("session-secret", sessionOk, "critical", sessionOk ? "SESSION_SECRET válido" : "SESSION_SECRET ausente ou inseguro"));
     results.push(result("encryption-key", encryptionOk, "critical", encryptionOk ? "ENCRYPTION_KEY válida" : "ENCRYPTION_KEY ausente ou insegura"));
-    const setupOk = Boolean(env.SETUP_TOKEN && !env.SETUP_TOKEN.startsWith("replace-") && env.SETUP_TOKEN.length >= 32);
-    results.push(result("setup-token", setupOk, "critical", setupOk ? "SETUP_TOKEN válido" : "SETUP_TOKEN ausente ou inseguro"));
+    const defaultLocalSuperAdminPassword = "TrocarSenha!2026";
+    const adminPassword = env.EASYSAAS_SUPERADMIN_PASSWORD || "";
+    const adminPasswordOk = Boolean(adminPassword && adminPassword.length >= 12 && (env.NODE_ENV !== "production" || adminPassword !== defaultLocalSuperAdminPassword));
+    results.push(result(
+      "superadmin-password",
+      adminPasswordOk,
+      "critical",
+      adminPasswordOk
+        ? "Senha do superadmin configurada"
+        : env.NODE_ENV === "production" && adminPassword === defaultLocalSuperAdminPassword
+          ? "Produção não pode usar a senha padrão local do superadmin"
+          : "EASYSAAS_SUPERADMIN_PASSWORD ausente ou curta"
+    ));
 
     const webPort = Number(env.WEB_PORT || 3000);
     const apiPort = Number(env.API_PORT || 4000);

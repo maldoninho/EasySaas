@@ -12,7 +12,6 @@
 - Instalação limpa.
 - Primeiro proprietário.
 - Login, logout, verificação de e-mail e recuperação.
-- MFA administrativo.
 - Papéis e permissões.
 - Criação, validação, ativação e rollback de módulo.
 - Backup e restauração.

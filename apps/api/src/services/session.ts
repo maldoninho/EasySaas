@@ -6,7 +6,7 @@ import { hashIp, randomToken, tokenHash } from "@easysaas/security";
 import { HttpError } from "../lib/http.js";
 import { getSecurityPolicy } from "./security-policy.js";
 
-export interface CurrentUser { id:string; email:string; name:string; status:string; roles:string[]; permissions:string[]; mfaEnabled:boolean; }
+export interface CurrentUser { id:string; email:string; name:string; status:string; roles:string[]; permissions:string[]; }
 export const SESSION_COOKIE=env.cookieSecure?"__Host-easysaas_session":"easysaas_session";
 export const CSRF_COOKIE="easysaas_csrf";
 const cookieBase={path:"/",sameSite:"strict" as const,secure:env.cookieSecure,domain:env.cookieDomain};
@@ -29,11 +29,10 @@ export async function loadCurrentUser(request:FastifyRequest):Promise<CurrentUse
   request.sessionId=row.session_id; request.csrfTokenHash=row.csrf_token_hash;
   await query("UPDATE sessions SET last_seen_at=now() WHERE id=$1 AND last_seen_at<now()-interval '5 minutes'",[row.session_id]);
   const roles=(await query<{key:string}>("SELECT r.key FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=$1 ORDER BY r.key",[row.id])).rows.map(r=>r.key);
-  const mfaResult=await query<{enabled:boolean}>("SELECT EXISTS(SELECT 1 FROM mfa_credentials WHERE user_id=$1 AND verified_at IS NOT NULL) enabled",[row.id]);
-  return {id:row.id,email:row.email,name:row.name,status:row.status,roles,permissions:await listUserPermissions(row.id),mfaEnabled:mfaResult.rows[0]?.enabled??false};
+  return {id:row.id,email:row.email,name:row.name,status:row.status,roles,permissions:await listUserPermissions(row.id)};
 }
 export async function requireAuth(request:FastifyRequest):Promise<void>{ const user=await loadCurrentUser(request); if(!user) throw new HttpError(401,"AUTH_REQUIRED","Autenticação obrigatória."); request.currentUser=user; }
-export function requirePermission(permission:string){ return async(request:FastifyRequest):Promise<void>=>{ await requireAuth(request); if(!request.currentUser!.permissions.includes("*")&&!request.currentUser!.permissions.includes(permission)) throw new HttpError(403,"PERMISSION_DENIED","Você não possui permissão para esta ação."); const policy=await getSecurityPolicy(); if(policy.adminMfaRequired&&(permission==="admin.access"||permission.endsWith(".write")||permission==="security.manage"||permission==="modules.activate")&&!request.currentUser!.mfaEnabled) throw new HttpError(403,"ADMIN_MFA_REQUIRED","Configure a autenticação em duas etapas para realizar ações administrativas."); }; }
+export function requirePermission(permission:string){ return async(request:FastifyRequest):Promise<void>=>{ await requireAuth(request); if(!request.currentUser!.permissions.includes("*")&&!request.currentUser!.permissions.includes(permission)) throw new HttpError(403,"PERMISSION_DENIED","Você não possui permissão para esta ação."); }; }
 export async function requireCsrf(request:FastifyRequest):Promise<void>{
   const header=request.headers["x-csrf-token"]; const cookie=request.cookies[CSRF_COOKIE];
   if(typeof header!=="string"||!cookie||header!==cookie||tokenHash(header)!==request.csrfTokenHash) throw new HttpError(403,"CSRF_INVALID","Token de segurança inválido. Atualize a página e tente novamente.");

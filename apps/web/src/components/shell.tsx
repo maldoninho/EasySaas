@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { requireUser, serverApi, type SessionUser } from "@/lib/api";
 import { UserMenu } from "./user-menu";
@@ -10,7 +9,7 @@ const adminNav=[
   {label:"Usuários e Acesso",href:"/admin/users"},{label:"Empresa",href:"/admin/company"},{label:"Segurança",href:"/admin/security"},{label:"Sistema",href:"/admin/system"},{label:"Auditoria",href:"/admin/audit"}
 ];
 export async function ApplicationShell({children,admin=false,title}:{children:ReactNode;admin?:boolean;title?:string}){
-  const user=await requireUser({admin});if(admin&&!user.mfaEnabled)redirect("/app/account?mfa=required");let navigation:Navigation|undefined;if(!admin)navigation=await serverApi<Navigation>("/api/v1/navigation");
+  const user=await requireUser({admin});let navigation:Navigation|undefined;if(!admin)navigation=await serverApi<Navigation>("/api/v1/navigation");
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="sidebar-brand"><Link href={admin?"/admin":"/app"} className="brand-link"><span className="brand-symbol">E</span><span>EasySaaS</span></Link><span className="context-badge">{admin?"Admin":"App"}</span></div>

@@ -1,6 +1,12 @@
-import { randomBytes } from "node:crypto";
 import { query, pool, closeDatabase } from "./index.js";
-import { hashPassword, tokenHash } from "@easysaas/security";
+import { hashPassword, validatePassword } from "@easysaas/security";
+
+const superAdminEmail = process.env.EASYSAAS_SUPERADMIN_EMAIL?.trim() || "superadmin@local.easysaas";
+const superAdminName = process.env.EASYSAAS_SUPERADMIN_NAME?.trim() || "Super Admin";
+const defaultLocalSuperAdminPassword = "TrocarSenha!2026";
+const configuredSuperAdminPassword = process.env.EASYSAAS_SUPERADMIN_PASSWORD?.trim();
+const superAdminPassword = configuredSuperAdminPassword || defaultLocalSuperAdminPassword;
+const isProduction = process.env.NODE_ENV === "production";
 
 // --- Permissões padrão ---
 const permissions = [
@@ -20,31 +26,44 @@ async function ownerExists(): Promise<boolean> {
   return (result.rowCount ?? 0) > 0;
 }
 
-async function hasPendingActivation(): Promise<boolean> {
-  const result = await query(
+async function pendingActivationId(): Promise<string | undefined> {
+  const result = await query<{ id: string }>(
     "SELECT id FROM users WHERE status = 'pending_activation' ORDER BY created_at ASC LIMIT 1"
   );
-  return result.rows.length > 0;
+  return result.rows[0]?.id;
 }
 
-function generateSecurePassword(): string {
-  // 24 caracteres seguros: maiúsculas, minúsculas, números, sem ambigüidade visual
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  let pwd = "";
-  const bytes = new Uint8Array(randomBytes(32));
-  for (let i = 0; i < 24; i++) {
-    pwd += chars[bytes[i]! % chars.length];
+function assertSuperAdminPassword(): void {
+  if (isProduction && (!configuredSuperAdminPassword || configuredSuperAdminPassword === defaultLocalSuperAdminPassword)) {
+    throw new Error("Produção exige EASYSAAS_SUPERADMIN_PASSWORD explícita e diferente da senha padrão local.");
   }
-  return pwd;
+
+  const errors = validatePassword(superAdminPassword);
+  if (errors.length > 0) {
+    throw new Error(`EASYSAAS_SUPERADMIN_PASSWORD não atende aos requisitos: ${errors.join(", ")}`);
+  }
+}
+
+function printCredentials(title: string): void {
+  const line = "═".repeat(62);
+  console.log(`\n${line}`);
+  console.log(`  ${title}`);
+  console.log(line);
+  console.log("  Login:          superadmin");
+  console.log(`  E-mail:         ${superAdminEmail}`);
+  if (isProduction) {
+    console.log("  Senha:          configurada por EASYSAAS_SUPERADMIN_PASSWORD (não exibida em produção)");
+  } else {
+    console.log(`  Senha:          ${superAdminPassword}`);
+  }
+  console.log("  URL:            http://localhost:3000/login");
+  console.log(line);
+  console.log("  ⚠  Credencial padrão para instalação local. Altere após entrar em produção.\n");
 }
 
 async function createSuperAdmin() {
-  const tempPassword = generateSecurePassword();
-  const activationToken = randomBytes(32).toString("base64url"); // 256 bits
-
-  const tempPasswordHash = await hashPassword(tempPassword);
-  const activationTokenHash = tokenHash(activationToken);
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
+  assertSuperAdminPassword();
+  const passwordHash = await hashPassword(superAdminPassword);
 
   const client = await pool.connect();
   try {
@@ -53,13 +72,13 @@ async function createSuperAdmin() {
     const user = await client.query(
       `INSERT INTO users (
         email, name, password_hash, status,
-        must_change_password, must_verify_email, must_enable_mfa,
-        activation_token_hash, activation_token_expires_at,
-        temporary_password_hash
-      ) VALUES ($1, $2, $3, 'pending_activation', true, true, false, $4, $5, $6)
+        must_change_password, must_verify_email,
+        activation_token_hash, activation_token_expires_at, temporary_password_hash,
+        activated_at, email_verified_at, password_changed_at,
+        accepted_terms_at, accepted_privacy_at
+      ) VALUES ($1, $2, $3, 'active', false, false, NULL, NULL, NULL, now(), now(), now(), now(), now())
       RETURNING id`,
-      ["superadmin@local.easysaas", "Super Admin", tempPasswordHash,
-       activationTokenHash, expiresAt, tempPasswordHash]
+      [superAdminEmail, superAdminName, passwordHash]
     );
     const userId = user.rows[0].id;
 
@@ -68,23 +87,12 @@ async function createSuperAdmin() {
       "INSERT INTO user_roles(user_id, role_id, assigned_by) SELECT $1, id, $1 FROM roles WHERE key = 'owner'",
       [userId]
     );
+    await client.query(
+      "UPDATE system_settings SET value=jsonb_set(value,'{setupComplete}','true'::jsonb),updated_at=now() WHERE key='installation'"
+    );
 
     await client.query("COMMIT");
-
-    // Saída formatada das credenciais
-    const line = "═".repeat(58);
-    console.log(`\n${line}`);
-    console.log("  🚀  SUPER ADMIN CRIADO AUTOMATICAMENTE");
-    console.log(line);
-    console.log(`  Usuário:        superadmin`);
-    console.log(`  E-mail:         superadmin@local.easysaas`);
-    console.log(`  Senha:          ${tempPassword}`);
-    console.log(`  Token ativação: ${activationToken}`);
-    console.log(`  URL:            http://localhost:3000/primeiro-acesso`);
-    console.log(`  Expira em:      ${expiresAt.toISOString()}`);
-    console.log(line);
-    console.log("  ⚠  Credenciais de uso único. Guarde-as com segurança.");
-    console.log("  Acesse a URL acima para ativar sua conta.\n");
+    printCredentials("🚀  SUPER ADMIN PADRÃO CRIADO AUTOMATICAMENTE");
 
   } catch (error) {
     await client.query("ROLLBACK");
@@ -94,41 +102,39 @@ async function createSuperAdmin() {
   }
 }
 
-async function revokeAndRecreate() {
-  const result = await query(
-    "SELECT id FROM users WHERE status = 'pending_activation' ORDER BY created_at ASC LIMIT 1"
-  );
-  if (result.rows.length === 0) return;
-
-  const userId = result.rows[0]!.id;
-  const tempPassword = generateSecurePassword();
-  const activationToken = randomBytes(32).toString("base64url");
-  const tempPasswordHash = await hashPassword(tempPassword);
-  const activationTokenHash = tokenHash(activationToken);
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+async function activatePendingSuperAdmin(userId: string) {
+  assertSuperAdminPassword();
+  const passwordHash = await hashPassword(superAdminPassword);
 
   await query(
     `UPDATE users SET
-      password_hash = $1, temporary_password_hash = $1,
-      activation_token_hash = $2, activation_token_expires_at = $3,
+      email = $1,
+      name = $2,
+      password_hash = $3,
+      temporary_password_hash = NULL,
+      activation_token_hash = NULL,
+      activation_token_expires_at = NULL,
+      status = 'active',
+      must_change_password = false,
+      must_verify_email = false,
+      activated_at = now(),
+      email_verified_at = now(),
+      password_changed_at = now(),
+      accepted_terms_at = now(),
+      accepted_privacy_at = now(),
       updated_at = now()
     WHERE id = $4`,
-    [tempPasswordHash, activationTokenHash, expiresAt, userId]
+    [superAdminEmail, superAdminName, passwordHash, userId]
+  );
+  await query(
+    "INSERT INTO user_roles(user_id, role_id, assigned_by) SELECT $1, id, $1 FROM roles WHERE key = 'owner' ON CONFLICT DO NOTHING",
+    [userId]
+  );
+  await query(
+    "UPDATE system_settings SET value=jsonb_set(value,'{setupComplete}','true'::jsonb),updated_at=now() WHERE key='installation'"
   );
   await query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL", [userId]);
-
-  const line = "═".repeat(58);
-  console.log(`\n${line}`);
-  console.log("  🔄  CREDENCIAIS REGENERADAS");
-  console.log(line);
-  console.log(`  Usuário:        superadmin`);
-  console.log(`  E-mail:         superadmin@local.easysaas`);
-  console.log(`  Senha:          ${tempPassword}`);
-  console.log(`  Token ativação: ${activationToken}`);
-  console.log(`  URL:            http://localhost:3000/primeiro-acesso`);
-  console.log(`  Expira em:      ${expiresAt.toISOString()}`);
-  console.log(line);
-  console.log("  ⚠  Credenciais anteriores revogadas. Use as novas.\n");
+  printCredentials("🔄  SUPER ADMIN PENDENTE ATIVADO COM CREDENCIAL PADRÃO");
 }
 
 // --- Execução principal do seed ---
@@ -136,10 +142,10 @@ const exists = await ownerExists();
 if (exists) {
   console.log("✓ Proprietário já existe. Seed concluído.");
 } else {
-  const pending = await hasPendingActivation();
-  if (pending) {
-    console.log("○ Conta pendente encontrada. Regenerando credenciais...");
-    await revokeAndRecreate();
+  const pendingId = await pendingActivationId();
+  if (pendingId) {
+    console.log("○ Conta pendente encontrada. Ativando Super Admin padrão...");
+    await activatePendingSuperAdmin(pendingId);
   } else {
     console.log("○ Nenhum proprietário encontrado. Criando Super Admin...");
     await createSuperAdmin();

@@ -4,10 +4,10 @@
 
 - [ ] PostgreSQL não usa credenciais do exemplo.
 - [ ] `.env.local` está fora do Git e com permissão restrita.
-- [ ] `SESSION_SECRET`, `ENCRYPTION_KEY` e `SETUP_TOKEN` são aleatórios.
+- [ ] `SESSION_SECRET` e `ENCRYPTION_KEY` são aleatórios.
+- [ ] A senha padrão local do superadmin foi alterada antes de qualquer ambiente compartilhado ou produção.
 - [ ] `COOKIE_SECURE=true` sob HTTPS.
 - [ ] API não está exposta diretamente.
-- [ ] MFA foi configurado para todos os administradores.
 - [ ] Cadastro público permanece desativado quando não necessário.
 - [ ] SMTP e domínio de envio foram validados.
 - [ ] Backup externo e restauração foram testados.
@@ -25,10 +25,9 @@
 - CSRF por cookie + cabeçalho + hash da sessão.
 - Cookies HttpOnly/SameSite e `__Host-` em produção.
 - Rate limiting de autenticação e setup.
-- MFA TOTP e códigos de recuperação.
 - RBAC com autorização server-side.
 - Reautenticação por senha para conceder Proprietário ou Super Admin.
-- Política configurável de CAPTCHA, sessão única, TTL e MFA administrativo.
+- Política configurável de CAPTCHA, sessão única e TTL.
 - Proteção do último proprietário.
 - Auditoria de ações críticas.
 - Upload temporário, inspeção de ZIP e bloqueio de path traversal/symlink.

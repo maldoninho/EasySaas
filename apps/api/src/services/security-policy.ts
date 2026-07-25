@@ -7,8 +7,6 @@ export interface SecurityPolicy {
   singleSession: boolean;
   publicSignup: boolean;
   sessionTtlHours: number;
-  adminMfaRequired: boolean;
-  mfaPolicy: "disabled" | "optional" | "owner-only" | "selected-roles" | "all";
 }
 
 export async function getSecurityPolicy(): Promise<SecurityPolicy> {
@@ -17,21 +15,11 @@ export async function getSecurityPolicy(): Promise<SecurityPolicy> {
   const mode = String(value.captchaMode ?? "");
   const captchaMode: SecurityPolicy["captchaMode"] =
     mode === "adaptive" || mode === "always" || mode === "off" ? mode : env.captchaMode as SecurityPolicy["captchaMode"];
-  const rawMfaPolicy = value.mfaPolicy;
-  const mfaPolicy: SecurityPolicy["mfaPolicy"] =
-    rawMfaPolicy === "disabled" || rawMfaPolicy === "optional" || rawMfaPolicy === "owner-only" ||
-    rawMfaPolicy === "selected-roles" || rawMfaPolicy === "all"
-      ? rawMfaPolicy
-      : env.mfaRequiredForAdmins
-        ? "all"
-        : "optional";
   return {
     captchaMode,
     singleSession: typeof value.singleSession === "boolean" ? value.singleSession : env.singleSession,
     publicSignup: typeof value.publicSignup === "boolean" ? value.publicSignup : env.publicSignup,
     sessionTtlHours: typeof value.sessionTtlHours === "number" && value.sessionTtlHours >= 1 && value.sessionTtlHours <= 168 ? value.sessionTtlHours : env.sessionTtlHours,
-    adminMfaRequired: mfaPolicy !== "disabled" && mfaPolicy !== "optional",
-    mfaPolicy,
   };
 }
 

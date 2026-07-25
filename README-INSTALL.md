@@ -66,28 +66,38 @@ O bootstrap:
 6. executa migrations e seed;
 7. inicia Web, API e Worker.
 
-## 5. Primeiro proprietário
+## 5. Login do superadmin local
 
-Abra:
+Depois do bootstrap, abra:
 
 ```text
-http://localhost:3000/setup
+http://localhost:3000/primeiro-acesso
 ```
 
-Abra `.env.local`, copie `SETUP_TOKEN` e preencha o formulário. O token é exigido somente no primeiro acesso e a operação é aceita apenas como acesso local.
+A própria tela informa a credencial padrão da instalação local:
 
-Depois:
+```text
+Login:  superadmin
+E-mail: superadmin@local.easysaas
+Senha:  TrocarSenha!2026
+```
 
-1. entre no App;
-2. abra **Configurações da conta**;
-3. ative MFA TOTP;
-4. acesse `/admin`.
+O seed cria esse usuário ativo automaticamente quando não existe proprietário. Para alterar antes do primeiro seed, edite `.env.local`:
+
+```env
+EASYSAAS_SUPERADMIN_EMAIL=superadmin@local.easysaas
+EASYSAAS_SUPERADMIN_NAME=Super Admin
+EASYSAAS_SUPERADMIN_PASSWORD=TrocarSenha!2026
+```
+
+Depois de entrar, acesse `/admin` e altere a senha se este ambiente for compartilhado.
 
 ## 6. URLs
 
 ```text
 Landing:    http://localhost:3000
 Login:      http://localhost:3000/login
+Primeiro:   http://localhost:3000/primeiro-acesso
 App:        http://localhost:3000/app
 Admin:      http://localhost:3000/admin
 Health:     http://localhost:4000/api/v1/health
@@ -152,4 +162,4 @@ chmod +x start.sh
 ./start.sh
 ```
 
-Também é válido executar `npm run dev` ou `pnpm dev`; ambos chamam o mesmo bootstrap automático. Não edite `.env.local` manualmente no primeiro início.
+Também é válido executar `npm run dev` ou `pnpm dev`; ambos chamam o mesmo bootstrap automático. Se quiser trocar a credencial padrão, edite apenas as variáveis `EASYSAAS_SUPERADMIN_*` antes do primeiro `pnpm db:seed`.

@@ -56,9 +56,6 @@ importers:
       fastify:
         specifier: 5.8.5
         version: 5.8.5
-      otpauth:
-        specifier: ^9.4.0
-        version: 9.5.1
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -681,10 +678,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
-    engines: {node: '>= 20.19.0'}
-
   '@phc/format@1.0.0':
     resolution: {integrity: sha512-m7X9U6BG2+J+R1lSOdCiITLLrxm+cWlNI3HUFA92oLO77ObGNzaKdh8pMLqdZcshtkKuV84olNNXDfMc4FezBQ==}
     engines: {node: '>=10'}
@@ -913,9 +906,6 @@ packages:
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
-
-  otpauth@9.5.1:
-    resolution: {integrity: sha512-fJmDAHc8wImfqqqOXIlBvT1dEKrZK0Cmb2VEgScpNTolCz0PHh6ExUZGv4sLtOsWNaHCQlD+rRqaPgnoxFoZjQ==}
 
   path-key@3.1.1:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
@@ -1404,8 +1394,6 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.2.11':
     optional: true
 
-  '@noble/hashes@2.2.0': {}
-
   '@phc/format@1.0.0': {}
 
   '@pinojs/redact@0.4.0': {}
@@ -1670,10 +1658,6 @@ snapshots:
   nodemailer@7.0.13: {}
 
   on-exit-leak-free@2.1.2: {}
-
-  otpauth@9.5.1:
-    dependencies:
-      '@noble/hashes': 2.2.0
 
   path-key@3.1.1: {}
 

@@ -1,0 +1,7 @@
+{
+  "to": "admin@empresa.com",
+  "text": "Use este link para redefinir sua senha: http://localhost:3000/reset-password?token=FPX2SoZULO6mhawudgD6xE7-GkFgIcgO12CH4uFgA50",
+  "subject": "Redefinição de senha",
+  "id": "49018a35-5b8b-444c-b697-6aa9b2501adb",
+  "createdAt": "2026-07-25T10:47:14.094Z"
+}

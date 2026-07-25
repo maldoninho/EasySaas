@@ -1,0 +1,3 @@
+export function PageIntro({title,description,actions}:{title:string;description?:string;actions?:React.ReactNode}){return <div className="page-intro"><div><h1>{title}</h1>{description&&<p>{description}</p>}</div>{actions&&<div className="page-actions">{actions}</div>}</div>}
+export function EmptyState({title,description}:{title:string;description:string}){return <div className="empty-state"><strong>{title}</strong><p>{description}</p></div>}
+export function StatusBadge({status}:{status:string}){return <span className={`status-badge status-${status.toLowerCase().replaceAll("_","-")}`}>{status}</span>}

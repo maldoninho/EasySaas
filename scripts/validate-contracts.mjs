@@ -1,0 +1,10 @@
+import { readFile } from "node:fs/promises";
+import { rootPath } from "./lib/root.mjs";
+const schema = JSON.parse(await readFile(rootPath("packages/contracts/src/module.schema.json"), "utf8"));
+const required = ["schemaVersion","stableId","name","version","description","entryFile","viewFile","permissions","coreCompatibility"];
+for (const key of required) if (!schema.required.includes(key)) throw new Error(`Campo obrigatório ausente no schema: ${key}`);
+if (schema.properties.entryFile.const !== "module.ts") throw new Error("entryFile deve ser module.ts");
+if (schema.additionalProperties !== false) throw new Error("O manifesto deve negar propriedades desconhecidas");
+const sample={schemaVersion:1,stableId:"example-module",name:"Módulo de exemplo",version:"1.0.0",description:"Exemplo válido.",entryFile:"module.ts",viewFile:"view.tsx",permissions:["example-module.access"],coreCompatibility:">=1.0.0 <2.0.0"};
+for (const key of required) if (!(key in sample)) throw new Error(`A amostra oficial não contém ${key}`);
+console.log("Contrato de módulo validado com sucesso.");

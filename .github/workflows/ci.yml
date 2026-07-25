@@ -1,0 +1,59 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  cross-platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+      - run: corepack enable
+      - name: Install
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
+      - run: node scripts/repair.mjs
+      - run: pnpm validate
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.4-alpine
+        env:
+          POSTGRES_DB: easysaas
+          POSTGRES_USER: easysaas
+          POSTGRES_PASSWORD: easysaas
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U easysaas -d easysaas"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --no-frozen-lockfile
+      - run: node scripts/repair.mjs
+        env:
+          DATABASE_URL: postgresql://easysaas:easysaas@127.0.0.1:5432/easysaas
+      - run: pnpm db:migrate && pnpm db:seed
+        env:
+          DATABASE_URL: postgresql://easysaas:easysaas@127.0.0.1:5432/easysaas
+      - run: pnpm --filter @easysaas/api test
+        env:
+          DATABASE_URL: postgresql://easysaas:easysaas@127.0.0.1:5432/easysaas

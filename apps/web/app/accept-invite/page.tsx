@@ -1,0 +1,1 @@
+import { Suspense } from "react";import { AcceptInviteForm } from "@/components/auth-forms";export const metadata={title:"Aceitar convite"};export default function Page(){return <Suspense><AcceptInviteForm/></Suspense>}

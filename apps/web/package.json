@@ -1,0 +1,23 @@
+{
+  "name": "@easysaas/web",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node ../../scripts/run-web.mjs dev",
+    "build": "next build",
+    "start": "node ../../scripts/run-web.mjs start",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@easysaas/contracts": "workspace:*",
+    "@easysaas/ui": "workspace:*",
+    "next": "16.2.11",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "6.0.3"
+  }
+}

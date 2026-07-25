@@ -1,0 +1,33 @@
+{
+  "name": "@easysaas/api",
+  "private": true,
+  "version": "1.0.5",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@easysaas/config": "workspace:*",
+    "@easysaas/contracts": "workspace:*",
+    "@easysaas/core": "workspace:*",
+    "@easysaas/database": "workspace:*",
+    "@easysaas/providers": "workspace:*",
+    "@easysaas/security": "workspace:*",
+    "@easysaas/validation": "workspace:*",
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "fastify": "5.8.5",
+    "otpauth": "^9.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "4.22.3",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,5 @@
+import { redirect } from "next/navigation";
+import { PageIntro } from "@/components/page-state";
+import { serverApi } from "@/lib/api";
+import { moduleViewLoaders } from "@/generated/module-registry";
+export default async function ModulePage({params}:{params:Promise<{category:string;module:string}>}){const {category,module}=await params;const resolved=await serverApi<{redirectTo?:string;module?:{stable_id:string;visual_name:string;description:string}}>(`/api/v1/navigation/resolve?category=${encodeURIComponent(category)}&module=${encodeURIComponent(module)}`);if(resolved.redirectTo)redirect(resolved.redirectTo);if(!resolved.module)return null;const loader=moduleViewLoaders[resolved.module.stable_id];return <><PageIntro title={resolved.module.visual_name} description={resolved.module.description}/>{loader?await (async()=>{const View=(await loader()).default;return <View/>})():<div className="notice error">A versão visual deste módulo ainda não foi incluída no build ativo. Solicite a reconstrução no painel administrativo.</div>}</>}

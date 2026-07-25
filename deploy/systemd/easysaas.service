@@ -1,0 +1,21 @@
+[Unit]
+Description=EasySaaS supervisor
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=easysaas
+Group=easysaas
+WorkingDirectory=/opt/easysaas
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env pnpm start
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/easysaas/runtime
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { PageIntro, StatusBadge } from "@/components/page-state";
+import { serverApi } from "@/lib/api";
+type Module = { id:string; visual_name:string; stable_id:string; category_name?:string; status:string; active_version?:string; updated_at:string };
+export const metadata={title:"Módulos"};
+export default async function ModulesPage(){const modules=await serverApi<Module[]>("/api/v1/admin/modules");return <><PageIntro title="Módulos" description="Estruturas, versões, validações, ativação e rollback." actions={<Link className="button button-primary" href="/admin/modules/new">Criar módulo</Link>}/><section className="panel"><div className="table-wrap"><table><thead><tr><th>Módulo</th><th>Categoria</th><th>Status</th><th>Versão ativa</th><th>Atualizado</th></tr></thead><tbody>{modules.map((module)=><tr key={module.id}><td><Link href={`/admin/modules/${module.id}`}><strong>{module.visual_name}</strong><small>{module.stable_id}</small></Link></td><td>{module.category_name??"Sem categoria"}</td><td><StatusBadge status={module.status}/></td><td>{module.active_version??"—"}</td><td>{new Date(module.updated_at).toLocaleString("pt-BR")}</td></tr>)}</tbody></table></div>{!modules.length&&<p className="muted-text">Nenhum módulo criado.</p>}</section></>}

@@ -1,0 +1,5 @@
+import { PageIntro } from "@/components/page-state";
+import { serverApi } from "@/lib/api";
+type Event={id:string;action:string;target_type?:string;target_id?:string;metadata:unknown;request_id?:string;created_at:string;actor_name?:string;actor_email?:string};
+export const metadata={title:"Auditoria"};
+export default async function AuditPage(){const events=await serverApi<Event[]>("/api/v1/admin/audit");return <><PageIntro title="Auditoria" description="Registro imutável de ações administrativas e eventos críticos."/><section className="panel"><div className="table-wrap"><table><thead><tr><th>Data</th><th>Ator</th><th>Ação</th><th>Destino</th><th>Request ID</th></tr></thead><tbody>{events.map((event)=><tr key={event.id}><td>{new Date(event.created_at).toLocaleString("pt-BR")}</td><td>{event.actor_name??"Sistema"}<small>{event.actor_email}</small></td><td><strong>{event.action}</strong></td><td>{event.target_type??"—"}{event.target_id?` · ${event.target_id}`:""}</td><td><code>{event.request_id??"—"}</code></td></tr>)}</tbody></table></div></section></>}

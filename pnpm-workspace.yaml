@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+  - modules/*
+
+nodeVersion: 24.18.0
+engineStrict: true
+strictPeerDependencies: true
+autoInstallPeers: false
+
+# pnpm 11 blocks dependency lifecycle scripts unless explicitly reviewed.
+# Only native/build tools required by this repository are allowed.
+allowBuilds:
+  argon2: true
+  esbuild: true
+  sharp: true

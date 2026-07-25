@@ -1,0 +1,42 @@
+{
+  "name": "easysaas",
+  "private": true,
+  "version": "1.0.5",
+  "description": "Base SaaS single-tenant modular, segura, instalável e administrável.",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=24.12.0 <25"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "packages:build": "pnpm -r --filter \"./packages/**\" --if-present build",
+    "packages:check": "node scripts/check-package-builds.mjs",
+    "ports:check": "node scripts/doctor.mjs --prestart",
+    "dev": "node scripts/bootstrap.mjs",
+    "dev:direct": "node scripts/supervisor.mjs dev",
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/bootstrap.mjs --production",
+    "start:direct": "node scripts/supervisor.mjs start",
+    "doctor": "node scripts/doctor.mjs",
+    "repair": "node scripts/repair.mjs",
+    "validate:contracts": "node scripts/validate-contracts.mjs",
+    "validate:structure": "node scripts/validate-structure.mjs",
+    "validate:scripts": "node scripts/validate-scripts.mjs",
+    "validate": "node scripts/validate.mjs",
+    "db:migrate": "pnpm --filter @easysaas/database migrate",
+    "db:seed": "pnpm --filter @easysaas/database seed",
+    "modules:registry": "node scripts/generate-module-registry.mjs",
+    "modules:scaffold": "node scripts/scaffold-module.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore:check": "node scripts/restore-check.mjs",
+    "test:bootstrap": "node --test tests/bootstrap/*.test.mjs",
+    "test": "node scripts/test.mjs",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "clean": "node scripts/clean.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "4.22.3",
+    "typescript": "6.0.3"
+  }
+}

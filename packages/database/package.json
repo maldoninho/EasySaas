@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepare:local": "tsx src/prepare-local-database.ts",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts"
   },

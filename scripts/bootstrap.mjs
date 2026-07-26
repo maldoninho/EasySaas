@@ -11,6 +11,7 @@ run("pnpm",["modules:registry"],{cwd:projectRoot});
 run("pnpm",["packages:build"],{cwd:projectRoot});
 run("pnpm",["packages:check"],{cwd:projectRoot});
 run("pnpm",["validate"],{cwd:projectRoot});
+if(!production)run("pnpm",["--filter","@easysaas/database","prepare:local"],{cwd:projectRoot});
 run("pnpm",["db:migrate"],{cwd:projectRoot});
 run("pnpm",["db:seed"],{cwd:projectRoot});
 if(production)run("pnpm",["build"],{cwd:projectRoot});
